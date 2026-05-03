@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CoverCraft — AI Cover Letter Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Karla:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #fdf8f0;
+      --parchment: #f5ede0;
+      --surface: #ffffff;
+      --border: #e8ddd0;
+      --text: #1c1208;
+      --muted: #9a8878;
+      --accent: #b5451b;
+      --accent2: #2d6a4f;
+      --accent3: #1d3557;
+      --display: 'Lora', serif;
+      --body: 'Karla', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      min-height: 100vh;
+    }
+
+    /* Paper texture */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: relative; z-index: 10;
+      background: var(--accent3);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 3px solid var(--accent);
+    }
+    .logo {
+      font-family: var(--display);
+      font-size: 1.2rem; font-weight: 700;
+      color: white; letter-spacing: -0.01em;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .logo-quill { font-size: 1.3rem; }
+    .header-sub { font-size: 0.72rem; color: rgba(255,255,255,0.5); letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      background: linear-gradient(135deg, var(--accent3) 0%, #2d4a7a 100%);
+      color: white;
+      padding: 4rem 2rem 3rem;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '✦ ✦ ✦';
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.6rem; color: rgba(255,255,255,0.2); letter-spacing: 0.5em;
+    }
+    .hero-kicker {
+      font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.25em; text-transform: uppercase;
+      color: rgba(255,255,255,0.5); margin-bottom: 1rem;
+    }
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 700; line-height: 1.1;
+      letter-spacing: -0.02em; margin-bottom: 1rem;
+    }
+    h1 em { color: #ffd166; font-style: italic; }
+    .hero-sub {
+      font-size: 1rem; color: rgba(255,255,255,0.65);
+      line-height: 1.7; max-width: 480px; margin: 0 auto;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .app {
+      position: relative; z-index: 1;
+      max-width: 1100px; margin: 0 auto;
+      padding: 2.5rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    /* ── FORM PANEL ── */
+    .form-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .panel-header {
+      background: var(--parchment);
+      border-bottom: 1px solid var(--border);
+      padding: 1.1rem 1.4rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .panel-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent3); color: white;
+      font-size: 0.72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .panel-title { font-family: var(--display); font-size: 1rem; font-weight: 600; }
+    .panel-body { padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+    label {
+      font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted);
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      font-family: var(--body); font-size: 0.88rem;
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent3);
+      box-shadow: 0 0 0 3px rgba(29,53,87,0.08);
+    }
+    textarea { min-height: 110px; line-height: 1.6; }
+    textarea.tall { min-height: 150px; }
+
+    /* TONE PILLS */
+    .tone-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tone-pill {
+      font-size: 0.78rem; font-weight: 500;
+      padding: 0.35rem 0.9rem; border-radius: 100px;
+      border: 1.5px solid var(--border);
+      cursor: pointer; transition: all 0.2s;
+      background: var(--bg); color: var(--muted);
+    }
+    .tone-pill:hover { border-color: var(--accent3); color: var(--accent3); }
+    .tone-pill.active {
+      background: var(--accent3); color: white; border-color: var(--accent3);
+    }
+
+    /* GENERATE BUTTON */
+    .generate-btn {
+      width: 100%;
+      background: var(--accent);
+      color: white; border: none; cursor: pointer;
+      padding: 1rem;
+      border-radius: 10px;
+      font-family: var(--display);
+      font-size: 1rem; font-weight: 600;
+      letter-spacing: 0.02em;
+      display: flex; align-items: center; justify-content: center; gap: 0.7rem;
+      transition: opacity 0.2s, transform 0.15s;
+      position: relative; overflow: hidden;
+    }
+    .generate-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+    .generate-btn:hover::after { transform: translateX(100%); }
+    .generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── OUTPUT PANEL ── */
+    .output-panel {
+      position: sticky; top: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .output-header {
+      background: var(--parchment);
+      border-bottom: 1px solid var(--border);
+      padding: 1.1rem 1.4rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .output-title { font-family: var(--display); font-size: 1rem; font-weight: 600; }
+    .output-actions { display: flex; gap: 0.5rem; }
+    .action-btn {
+      font-size: 0.72rem; font-weight: 600;
+      padding: 0.35rem 0.8rem; border-radius: 6px;
+      border: 1.5px solid var(--border);
+      cursor: pointer; background: white;
+      color: var(--muted); font-family: var(--body);
+      transition: all 0.2s; letter-spacing: 0.05em;
+    }
+    .action-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+    .action-btn.primary { background: var(--accent3); color: white; border-color: var(--accent3); }
+    .action-btn.primary:hover { opacity: 0.85; }
+
+    .output-body { padding: 1.8rem; min-height: 400px; }
+
+    /* PLACEHOLDER */
+    .placeholder {
+      height: 100%; min-height: 380px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; gap: 0.8rem;
+    }
+    .placeholder-icon { font-size: 3rem; opacity: 0.3; }
+    .placeholder-text { font-family: var(--display); font-size: 1.1rem; color: var(--muted); font-style: italic; }
+    .placeholder-sub { font-size: 0.82rem; color: var(--border); }
+
+    /* LOADING */
+    .loading {
+      display: none;
+      min-height: 380px;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem;
+    }
+    .loading-quill {
+      font-size: 2.5rem;
+      animation: float 1.5s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100%{transform:translateY(0) rotate(-5deg)} 50%{transform:translateY(-10px) rotate(5deg)} }
+    .loading-text {
+      font-family: var(--display);
+      font-size: 1rem; color: var(--muted); font-style: italic;
+    }
+    .loading-dots::after {
+      content: '...';
+      animation: dots 1.5s step-end infinite;
+    }
+    @keyframes dots {
+      0%{content:'.'} 33%{content:'..'} 66%{content:'...'} 100%{content:'.'}
+    }
+
+    /* LETTER OUTPUT */
+    .letter-output {
+      display: none;
+      font-family: var(--display);
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: var(--text);
+      white-space: pre-wrap;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* WORD COUNT */
+    .letter-meta {
+      display: none;
+      margin-top: 1.2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      display: none;
+      gap: 1rem;
+      font-size: 0.75rem; color: var(--muted);
+    }
+    .meta-tag {
+      background: var(--parchment);
+      padding: 0.2rem 0.6rem; border-radius: 100px;
+    }
+
+    /* ERROR */
+    .error-box {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      font-size: 0.84rem; color: #dc2626;
+      margin-top: 0.8rem;
+    }
+
+    /* FOOTER */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 1.2rem 2rem;
+      text-align: center;
+      font-size: 0.72rem; color: var(--muted);
+    }
+    footer a { color: var(--accent3); text-decoration: none; }
+
+    @media(max-width: 768px) {
+      .app { grid-template-columns: 1fr; }
+      .output-panel { position: static; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="logo-quill">✒️</span> CoverCraft</div>
+  <div class="header-sub">AI-Powered · Tailored · ATS-Ready</div>
+</header>
+
+<div class="hero">
+  <p class="hero-kicker">// AI Cover Letter Generator</p>
+  <h1>Land the Interview with a<br><em>Perfect</em> Cover Letter</h1>
+  <p class="hero-sub">Paste the job description and your skills — our AI crafts a tailored, ATS-optimised cover letter in seconds.</p>
+</div>
+
+<div class="app">
+
+  <!-- FORM -->
+  <div class="form-panel">
+    <div class="panel-header">
+      <div class="panel-num">1</div>
+      <span class="panel-title">Your Details</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="field-row">
+        <div class="field">
+          <label>Your Full Name</label>
+          <input type="text" id="yourName" placeholder="Harshith Pabbathi" value="Harshith Pabbathi"/>
+        </div>
+        <div class="field">
+          <label>Target Company</label>
+          <input type="text" id="targetCompany" placeholder="Google DeepMind"/>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Job Description</label>
+        <textarea id="jobDescription" class="tall" placeholder="Paste the full job description here — include all requirements, responsibilities and qualifications…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Your Key Skills &amp; Experience</label>
+        <textarea id="skills" placeholder="e.g. MSc Big Data at Northumbria University, Python, PyTorch, BERT/RoBERTa NLP, 93% accuracy sentiment analysis project, AWS Cloud internship at Honeywell, Full Stack internship at ICT Academy…">MSc Big Data & Data Science at Northumbria University (2024-2026). BEng AI & Machine Learning. Skills: Python, PyTorch, TensorFlow, BERT, RoBERTa, Hugging Face, NLP, Machine Learning, Deep Learning, SQL, AWS, Power BI, Scikit-Learn. Projects: Sentiment Analysis (93% accuracy using BERT/RoBERTa), Chat2Vis NLP pipeline (85-90% accuracy), Information Extraction NLP system. Internships: AWS Cloud Practitioner at Honeywell, Full Stack Developer at ICT Academy. Certifications: IBM Data Analytics, Google Generative AI, AWS Cloud Practitioner.</textarea>
+      </div>
+
+      <div class="field">
+        <label>Additional Context (optional)</label>
+        <textarea id="experience" placeholder="Any specific achievements, reasons you want this role, or company-specific points to mention…"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Tone</label>
+        <div class="tone-pills">
+          <div class="tone-pill active" onclick="setTone(this, 'Professional yet personable')">Professional</div>
+          <div class="tone-pill" onclick="setTone(this, 'Enthusiastic and energetic')">Enthusiastic</div>
+          <div class="tone-pill" onclick="setTone(this, 'Confident and direct')">Confident</div>
+          <div class="tone-pill" onclick="setTone(this, 'Academic and research-focused')">Academic</div>
+          <div class="tone-pill" onclick="setTone(this, 'Creative and distinctive')">Creative</div>
+        </div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="generateLetter()">
+        ✒️ Generate Cover Letter
+      </button>
+
+      <div class="error-box" id="errorBox"></div>
+
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="output-panel">
+    <div class="output-header">
+      <span class="output-title">📄 Your Cover Letter</span>
+      <div class="output-actions">
+        <button class="action-btn" id="copyBtn" onclick="copyLetter()" style="display:none">Copy</button>
+        <button class="action-btn primary" id="downloadBtn" onclick="downloadLetter()" style="display:none">↓ Download</button>
+      </div>
+    </div>
+    <div class="output-body">
+
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">✒️</div>
+        <div class="placeholder-text">Your letter will appear here</div>
+        <div class="placeholder-sub">Fill in the form and click Generate</div>
+      </div>
+
+      <div class="loading" id="loading">
+        <div class="loading-quill">✍️</div>
+        <div class="loading-text">Writing your letter<span class="loading-dots"></span></div>
+      </div>
+
+      <div class="letter-output" id="letterOutput"></div>
+
+      <div class="letter-meta" id="letterMeta">
+        <span class="meta-tag" id="wordCount">0 words</span>
+        <span class="meta-tag" id="toneTag">Professional</span>
+        <span class="meta-tag">ATS-Optimised ✓</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Built by <a href="https://harshithhuk.netlify.app/" target="_blank">Harshith Pabbathi</a> · MSc Data Science, Northumbria University · Powered by Claude AI
+</footer>
+
+<script>
+  let selectedTone = 'Professional yet personable';
+  let currentLetter = '';
+
+  function setTone(el, tone) {
+    document.querySelectorAll('.tone-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    selectedTone = tone;
+  }
+
+  async function generateLetter() {
+    const jobDescription = document.getElementById('jobDescription').value.trim();
+    const skills = document.getElementById('skills').value.trim();
+    const experience = document.getElementById('experience').value.trim();
+    const yourName = document.getElementById('yourName').value.trim();
+    const targetCompany = document.getElementById('targetCompany').value.trim();
+
+    if (!jobDescription) { showError('Please paste the job description.'); return; }
+    if (!skills) { showError('Please add your skills and experience.'); return; }
+
+    // UI State
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('letterOutput').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('letterMeta').style.display = 'none';
+    document.getElementById('errorBox').style.display = 'none';
+    document.getElementById('copyBtn').style.display = 'none';
+    document.getElementById('downloadBtn').style.display = 'none';
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('generateBtn').textContent = '⏳ Writing…';
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobDescription, skills, experience, tone: selectedTone, yourName, targetCompany }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      currentLetter = data.letter;
+      const wordCount = data.letter.trim().split(/\s+/).length;
+
+      document.getElementById('letterOutput').textContent = data.letter;
+      document.getElementById('letterOutput').style.display = 'block';
+      document.getElementById('wordCount').textContent = wordCount + ' words';
+      document.getElementById('toneTag').textContent = selectedTone.split(' ')[0];
+      document.getElementById('letterMeta').style.display = 'flex';
+      document.getElementById('copyBtn').style.display = 'inline-flex';
+      document.getElementById('downloadBtn').style.display = 'inline-flex';
+
+    } catch (err) {
+      document.getElementById('placeholder').style.display = 'flex';
+      showError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('generateBtn').disabled = false;
+      document.getElementById('generateBtn').innerHTML = '✒️ Regenerate Letter';
+    }
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = '⚠ ' + msg;
+    box.style.display = 'block';
+  }
+
+  function copyLetter() {
+    navigator.clipboard.writeText(currentLetter).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied! ✓';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  function downloadLetter() {
+    const name = document.getElementById('yourName').value || 'cover-letter';
+    const company = document.getElementById('targetCompany').value || 'application';
+    const blob = new Blob([currentLetter], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.replace(/\s+/g,'-')}-${company.replace(/\s+/g,'-')}-cover-letter.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+</script>
+</body>
+</html>
